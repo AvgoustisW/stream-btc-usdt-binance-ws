@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { NavLink as RouterNavLink } from "react-router-dom";
 
 interface NavLinkProps {
 	href: string;
@@ -6,10 +6,17 @@ interface NavLinkProps {
 }
 
 const NavLink = ({ href, title }: NavLinkProps) => (
-	<Link className="relative group text-2xl transition duration-200 ease-in-out overflow-hidden" to={href} title={title}>
-		<span className="relative">{title}</span>
-		<span className="absolute inset-0 bg-black scale-y-0 origin-bottom transition-transform duration-200 ease-in-out group-hover:scale-y-100 z-[-1]"></span>
-	</Link>
+	<RouterNavLink
+		className={({ isActive }) =>
+			`relative group text-2xl transition duration-200 ease-in-out overflow-hidden  text-white ${
+				isActive ? "bg-green-500 text-white " : ""
+			}`
+		}
+		to={href}
+		title={title}
+	>
+		<span>{title}</span>
+	</RouterNavLink>
 );
 
 export default NavLink;

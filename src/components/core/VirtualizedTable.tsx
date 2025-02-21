@@ -4,19 +4,16 @@ import AutoSizer from "react-virtualized-auto-sizer";
 
 export interface VirtualizedTableColumn<T> {
 	label: string;
-	accessor: (row: T) => React.ReactNode;
 	width?: string;
+	accessor: (row: T) => React.ReactNode;
 	colStyle?: string;
-	rowStyle?: string;
+	rowStyle?: (row: T) => React.ReactNode;
 }
 
 export interface VirtualizedTableProps<T> {
 	data: T[];
 	rowHeight: number;
 	columns: VirtualizedTableColumn<T>[];
-	/**
-	 * Optional function to generate a unique key for each row.
-	 */
 	rowKey?: string;
 }
 
@@ -28,9 +25,9 @@ export const VirtualizedTable = <T,>({
 }: VirtualizedTableProps<T>) => {
 	// Generate the header using the columns config.
 	const header = (
-		<div className="flex font-bold px-2 py-1 border-b border-gray-300">
+		<div className="flex font-bold px-2 py-1 border-b border-gray-800">
 			{columns.map((col) => (
-				<div key={`header-${col.label}`} className={col.width ?? "w-1/6" + " " + col.colStyle}>
+				<div key={`header-${col.label}`} className={col.width ?? "w-full" + " " + col.colStyle}>
 					{col.label}
 				</div>
 			))}
@@ -41,7 +38,10 @@ export const VirtualizedTable = <T,>({
 	const renderRow = (row: T) => (
 		<>
 			{columns.map((col) => (
-				<div key={`cell-${col.label}`} className={`${col.width ?? "w-1/6"} px-2 py-1 ${col.rowStyle}`}>
+				<div
+					key={`cell-${col.label}`}
+					className={`${col.width ?? "w-full"} flex  items-center px-2 py-1 ${col.rowStyle ? col.rowStyle(row) : ""}`}
+				>
 					{col.accessor(row)}
 				</div>
 			))}
@@ -57,7 +57,7 @@ export const VirtualizedTable = <T,>({
 				{({ height, width }) => (
 					<List height={height} itemCount={data.length} itemSize={rowHeight} width={width} itemData={data}>
 						{({ index, style, data }: ListChildComponentProps<T[]>) => (
-							<div key={`${rowKey}-${data[index]}`} style={style} className="flex border-t border-gray-200">
+							<div key={`${rowKey}-${data[index]}`} style={style} className="flex border-t border-gray-800">
 								{renderRow(data[index])}
 							</div>
 						)}

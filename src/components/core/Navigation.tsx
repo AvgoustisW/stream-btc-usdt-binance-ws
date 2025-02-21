@@ -2,8 +2,8 @@ import NavLink from "./NavLink";
 
 const Navigation = () => {
 	return (
-		<nav className="w-full h-full flex justify-end pr-10 ">
-			<ul className="flex items-end gap-x-4">
+		<nav className="h-full flex items-end pr-10 ">
+			<ul className="flex gap-x-4">
 				<li>
 					<NavLink href={"/monitor"} title="Monitor" />
 				</li>
