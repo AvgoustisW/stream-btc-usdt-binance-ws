@@ -1,24 +1,36 @@
-import { useWebSocketStore } from "@/store/webSocketStore";
+import { useWebSocketStore } from "@/store/webSocketStore.ts";
 
 const StreamController = () => {
-	const { connect, disconnect } = useWebSocketStore();
-
-	const handleDisconnectFromStream = () => {
-		disconnect();
-	};
+	const { connect, disconnect, isConnected } = useWebSocketStore();
 
 	const handleConnectToStream = () => {
 		connect();
 	};
 
+	const handleDisconnectFromStream = () => {
+		disconnect();
+	};
+
 	return (
-		<div className="p-4 flex ">
-			<div className=" bg-blue-500  cursor-pointer mr-6" onClick={handleConnectToStream}>
+		<div className=" flex gap-4 ">
+			<button
+				className={` px-4 py-2 rounded bg-blue-500 text-white font-bold ${
+					isConnected ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:bg-blue-600"
+				}`}
+				onClick={handleConnectToStream}
+				disabled={isConnected}
+			>
 				Start
-			</div>
-			<div className=" bg-red-500 cursor-pointer" onClick={handleDisconnectFromStream}>
+			</button>
+			<button
+				className={` cursor-pointer  px-4 py-2 rounded bg-red-500 text-white font-bold ${
+					!isConnected ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:bg-red-600"
+				}`}
+				onClick={handleDisconnectFromStream}
+				disabled={!isConnected}
+			>
 				Stop
-			</div>
+			</button>
 		</div>
 	);
 };
