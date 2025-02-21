@@ -71,6 +71,8 @@ export interface CryptoCompareMessage {
 	 * @description The external exchange sequence if they have one.
 	 */
 	SEQ: number;
+
+	ALERT_TYPE: AlertType | "none";
 }
 
 /**
@@ -163,4 +165,36 @@ export const CryptoCompareMessageFieldLabels: Record<keyof CryptoCompareMessage,
 	Q: "Quantity",
 	REPORTEDNS: "Reported Timestamp (ns)",
 	SEQ: "Exchange Sequence",
+};
+
+export interface CryptoCompareAlert {
+	TYPE: AlertType;
+	PRICE: number;
+	QUANTITY: number;
+	TOTAL: number;
+	TIMESTAMP: number;
+}
+export enum AlertType {
+	CHEAP = "cheap",
+	SOLID = "solid",
+	BIG = "big",
+	NONE = "none",
+}
+
+export const AlertTypeLabels: Record<AlertType, string> = {
+	[AlertType.CHEAP]: "Cheap order",
+	[AlertType.SOLID]: "Solid order",
+	[AlertType.BIG]: "Big biznis here",
+	[AlertType.NONE]: "No alert",
+};
+
+/**
+ * @description Human-readable labels for each field of a CryptoCompareAlert.
+ */
+export const CryptoCompareAlertFieldLabels: Record<keyof CryptoCompareAlert, string> = {
+	TYPE: "Type",
+	PRICE: "Price",
+	QUANTITY: "Quantity",
+	TOTAL: "Total",
+	TIMESTAMP: "Timestamp",
 };

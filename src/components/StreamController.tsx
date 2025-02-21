@@ -1,7 +1,9 @@
-import { useWebSocketStore } from "@/store/webSocketStore.ts";
+import { useWebSocketStore } from "@/store/webSocketStore";
+import IconButton from "./core/IconButton";
+import { FaStop, FaPlay } from "react-icons/fa";
 
 const StreamController = () => {
-	const { connect, disconnect, isConnected } = useWebSocketStore();
+	const { connect, disconnect, isConnected, isLoading } = useWebSocketStore();
 
 	const handleConnectToStream = () => {
 		connect();
@@ -11,26 +13,28 @@ const StreamController = () => {
 		disconnect();
 	};
 
+	const isStartDisabled = isConnected && !isLoading;
+	const isStopDisabled = !isConnected && !isLoading;
+
 	return (
-		<div className=" flex gap-4 ">
-			<button
-				className={` px-4 py-2 rounded bg-blue-500 text-white font-bold ${
-					isConnected ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:bg-blue-600"
-				}`}
+		<div className="flex  gap-4">
+			<IconButton
+				text="Start"
 				onClick={handleConnectToStream}
-				disabled={isConnected}
-			>
-				Start
-			</button>
-			<button
-				className={` cursor-pointer  px-4 py-2 rounded bg-red-500 text-white font-bold ${
-					!isConnected ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:bg-red-600"
+				disabled={isStartDisabled}
+				className={`bg-green-600 ${
+					isStartDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:bg-green-400"
 				}`}
+				isLoading={isLoading}
+				icon={<FaPlay />}
+			/>
+			<IconButton
+				text="Stop"
 				onClick={handleDisconnectFromStream}
-				disabled={!isConnected}
-			>
-				Stop
-			</button>
+				disabled={isStopDisabled}
+				className={`bg-red-600 ${isStopDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:bg-red-400"}`}
+				icon={<FaStop />}
+			/>
 		</div>
 	);
 };
