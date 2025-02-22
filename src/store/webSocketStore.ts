@@ -17,6 +17,7 @@ interface WebSocketStore {
 	isLoading: boolean;
 	lastMessage: string | null;
 	lastCCSEQ: number | null;
+	lastHeartbeat: number;
 	messages: MessageItem[];
 	alertsCheap: CryptoCompareAlert[];
 	alertsSolid: CryptoCompareAlert[];
@@ -33,14 +34,21 @@ const apiKey = import.meta.env.VITE_CRYPTOCOMPARE_API_KEY;
 const MAX_MESSAGES = 500;
 const ALERT_WINDOW_MS = 60000;
 const BINANCE_SUBSCRIPTION = "8~Binance~BTC~USDT";
-const RECONNECT_DELAY = 2000;
+// Ensure reconnection is delayed at least 5 seconds.
+const RECONNECT_DELAY = 5000;
 
 export const useWebSocketStore = create<WebSocketStore>((set, get) => {
 	let socket: WebSocket | null = null;
+	// Track heartbeat checker interval locally.
+	let heartbeatIntervalId: ReturnType<typeof setInterval> | null = null;
 
-	// Cleanup: remove event handlers & close the socket.
+	// Cleanup: remove event handlers, close the socket and clear heartbeat interval.
 	function cleanupSocket() {
 		console.log("WebSocket disconnected");
+		if (heartbeatIntervalId) {
+			clearInterval(heartbeatIntervalId);
+			heartbeatIntervalId = null;
+		}
 		if (socket) {
 			socket.onopen = null;
 			socket.onmessage = null;
@@ -124,8 +132,9 @@ export const useWebSocketStore = create<WebSocketStore>((set, get) => {
 		isConnected: false,
 		isLoading: false,
 		lastMessage: null,
-		messages: [],
 		lastCCSEQ: null,
+		lastHeartbeat: Date.now(),
+		messages: [],
 		alertsCheap: [],
 		alertsSolid: [],
 		alertsBig: [],
@@ -146,8 +155,16 @@ export const useWebSocketStore = create<WebSocketStore>((set, get) => {
 			socket = new WebSocket(`wss://streamer.cryptocompare.com/v2?api_key=${apiKey}`);
 
 			socket.onopen = () => {
-				set({ isConnected: true, isLoading: false });
+				set({ isConnected: true, isLoading: false, lastHeartbeat: Date.now() });
 				console.log("WebSocket connected");
+				// Start heartbeat checker interval.
+				heartbeatIntervalId = setInterval(() => {
+					if (Date.now() - get().lastHeartbeat > 60000) {
+						console.warn("Stale connection: missing heartbeat. Reconnecting...");
+						get().reconnect();
+					}
+				}, 10000); // check every 10 seconds
+
 				const subscription = {
 					action: "SubAdd",
 					subs: [BINANCE_SUBSCRIPTION],
@@ -157,19 +174,22 @@ export const useWebSocketStore = create<WebSocketStore>((set, get) => {
 
 			socket.onmessage = (event) => {
 				const message: CryptoCompareMessage = JSON.parse(event.data);
+				// Update heartbeat if received.
+				if (message.TYPE === MessageType.Heartbeat) {
+					set({ lastHeartbeat: Date.now() });
+					return;
+				}
 				// Handle ServerError immediately and try to reconnect.
 				if (message.TYPE === MessageType.ServerError) {
 					console.error(MessageTypeLabels[MessageType.ServerError], message.M);
 					get().reconnect();
 					return;
 				}
-
 				// Handle client errors.
 				if (message.TYPE === MessageType.RateLimited || message.TYPE === MessageType.Unauthorized) {
 					console.error(MessageTypeLabels[message.TYPE]);
 					return;
 				}
-
 				// Only process OrderBookUpdate and OrderBookSnapshot.
 				if (message.TYPE !== MessageType.OrderBookUpdate && message.TYPE !== MessageType.OrderBookSnapshot) {
 					return;
@@ -194,7 +214,6 @@ export const useWebSocketStore = create<WebSocketStore>((set, get) => {
 
 			socket.onclose = () => {
 				set({ isConnected: false, isLoading: false });
-				console.log("WebSocket disconnected");
 			};
 
 			socket.onerror = (error) => {
