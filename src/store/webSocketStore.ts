@@ -132,12 +132,19 @@ export const useWebSocketStore = create<WebSocketStore>((set, get) => {
 
 			socket.onmessage = (event) => {
 				const message: CryptoCompareMessage = JSON.parse(event.data);
-				// Handle ServerError immediately.
+				// Handle ServerError immediately and try to reconnect.
 				if (message.TYPE === MessageType.ServerError) {
 					console.error(MessageTypeLabels[MessageType.ServerError], message.M);
 					get().reconnect();
 					return;
 				}
+
+				// Handle client errors.
+				if (message.TYPE === MessageType.RateLimited || message.TYPE === MessageType.Unauthorized) {
+					console.error(MessageTypeLabels[message.TYPE]);
+					return;
+				}
+
 				// Only process OrderBookUpdate and OrderBookSnapshot.
 				if (message.TYPE !== MessageType.OrderBookUpdate && message.TYPE !== MessageType.OrderBookSnapshot) {
 					return;
