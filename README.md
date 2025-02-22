@@ -2,7 +2,7 @@
 
 ## How to run:
 
-You can find it deployed on vercel here: [https://stream-them-all.vercel.app/](https://stream-them-all.vercel.app/)
+You can find it deployed on vercel here: [https://stream-them-all.vercel.app/monitor](https://stream-them-all.vercel.app/monitor)
 
 If you decide to run it locally, you will first need to create an `.env` file in the root of the project with the following content:
 
@@ -36,13 +36,15 @@ I went through the documentation of Order Book L2 and made a very close represen
 
 When it comes to memory leak, it was my biggest concern. I have tested it in a few ways and it's not present so far. I have consitently simulated a memory leak by inspecting dev tools and looking at the websocket incoming data. The browser stores it for debugging and as it is logical, the memory allocated grows and grows. By keeping the dev tools closed I haven't found any memory leaks thus far.
 
+I implemented virtualization with `react-window` (removing dom elements that are not in viewport). While 500 is not a huge amount of data, that might change in the future. It's good to be prepared, the array still holds all 500 elements in memory.
+
 ## Shadow Banned:
 
 I got shadow banned from CryptoCompare on my first attempt to stream the data, getting `429 Too Many Requests` error that just wouldn't go away. Making a second account from the same IP did not solve the problem, they did their due dilligence. Making a third account from a different IP did provide a working api key.
 
-## Why is there no throttling? Do you not want the user to see what's going on in the monitor screen?
+## Why is there no throttling?
 
-I did implement throttling at first. The performance & UI/UX was much smoother and more performant on the Monitor page. The problem was that the data coming in the screen was just not up to date to the real data from the WS connection. Given this is a terminal app that displays **financial** data, and that I did not have any business requirements I preferred to just remove all throttling logic and perhaps discuss it with you in the interview. I am quite curious myself of what is the best approach.
+I did implement throttling at first. UI/UX was much smoother and more performant on the Monitor page. The problem was that the data coming in the screen was just not up to date to the real data from the WS connection. Given this is a terminal app that displays **financial** data, and that I did not have any business requirements, I preferred to just remove all throttling logic and perhaps discuss it with you in the interview. I am quite curious myself of what is the best approach.
 
 ## What can be improved? What is missing?
 
