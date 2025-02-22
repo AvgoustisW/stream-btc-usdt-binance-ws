@@ -15,12 +15,14 @@ export interface VirtualizedTableProps<T> {
 	rowHeight: number;
 	columns: VirtualizedTableColumn<T>[];
 	rowKey?: string;
+	noDataText?: string;
 }
 
 export const VirtualizedTable = <T,>({
 	data,
 	rowHeight,
 	columns,
+	noDataText = "Waiting on data...",
 	rowKey = "vt-table-row",
 }: VirtualizedTableProps<T>) => {
 	// Generate the header using the columns config.
@@ -48,9 +50,18 @@ export const VirtualizedTable = <T,>({
 		</>
 	);
 
+	if (data.length === 0) {
+		return (
+			<div className="p-4 h-full">
+				<p>{noDataText}</p>
+			</div>
+		);
+	}
+
 	return (
 		<div className="p-4 h-full">
 			{/* Header */}
+
 			{header}
 			{/* Virtualized rows */}
 			<AutoSizer>

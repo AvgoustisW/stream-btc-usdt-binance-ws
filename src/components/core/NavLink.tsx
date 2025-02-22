@@ -8,9 +8,7 @@ interface NavLinkProps {
 const NavLink = ({ href, title }: NavLinkProps) => (
 	<RouterNavLink
 		className={({ isActive }) =>
-			`relative group text-2xl transition duration-200 ease-in-out overflow-hidden  text-white ${
-				isActive ? "bg-green-500 text-white " : ""
-			}`
+			`relative group text-2xl transition duration-200 ease-in-out overflow-hidden ${isActive ? "bg-green-500 " : ""}`
 		}
 		to={href}
 		title={title}

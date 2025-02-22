@@ -22,9 +22,7 @@ const StreamController = () => {
 				text="Start"
 				onClick={handleConnectToStream}
 				disabled={isStartDisabled}
-				className={`bg-green-600 ${
-					isStartDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:bg-green-400"
-				}`}
+				className={` ${isStartDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:bg-green-400"}`}
 				isLoading={isLoading}
 				icon={<FaPlay />}
 			/>
@@ -32,7 +30,7 @@ const StreamController = () => {
 				text="Stop"
 				onClick={handleDisconnectFromStream}
 				disabled={isStopDisabled}
-				className={`bg-red-600 ${isStopDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:bg-red-400"}`}
+				className={` ${isStopDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:bg-red-400"}`}
 				icon={<FaStop />}
 			/>
 		</div>

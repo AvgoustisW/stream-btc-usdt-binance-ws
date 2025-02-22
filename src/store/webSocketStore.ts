@@ -15,8 +15,11 @@ interface WebSocketStore {
 	isConnected: boolean;
 	isLoading: boolean;
 	lastMessage: string | null;
+	lastCCSEQ: number | null;
 	messages: MessageItem[];
-	alerts: CryptoCompareAlert[];
+	alertsCheap: CryptoCompareAlert[];
+	alertsSolid: CryptoCompareAlert[];
+	alertsBig: CryptoCompareAlert[];
 	sendMessage: (message: string) => void;
 	connect: () => void;
 	disconnect: () => void;
@@ -24,8 +27,8 @@ interface WebSocketStore {
 }
 
 const MAX_MESSAGES = 500;
-const ALERT_WINDOW_MS = 60000; // 1 minute alerts window
-
+const ALERT_WINDOW_MS = 60000;
+const BINANCE_SUBSCRIPTION = "8~Binance~BTC~USDT";
 export const useWebSocketStore = create<WebSocketStore>((set, get) => {
 	let socket: WebSocket | null = null;
 	const apiKey = import.meta.env.VITE_CRYPTOCOMPARE_API_KEY;
@@ -36,7 +39,10 @@ export const useWebSocketStore = create<WebSocketStore>((set, get) => {
 		isLoading: false,
 		lastMessage: null,
 		messages: [],
-		alerts: [],
+		lastCCSEQ: null,
+		alertsCheap: [],
+		alertsSolid: [],
+		alertsBig: [],
 
 		sendMessage: (message: string) => {
 			if (socket && socket.readyState === WebSocket.OPEN) {
@@ -57,7 +63,7 @@ export const useWebSocketStore = create<WebSocketStore>((set, get) => {
 				console.log("WebSocket connected");
 				const subscription = {
 					action: "SubAdd",
-					subs: ["8~Binance~BTC~USDT"],
+					subs: [BINANCE_SUBSCRIPTION],
 				};
 				socket!.send(JSON.stringify(subscription));
 			};
@@ -70,65 +76,92 @@ export const useWebSocketStore = create<WebSocketStore>((set, get) => {
 					get().reconnect();
 					return;
 				}
-				if (message.TYPE !== MessageType.OrderBookUpdate) return;
-				set((state) => {
-					let newMessages: MessageItem[];
-
-					const price = message.P;
-					const quantity = message.Q;
-					const total = price * quantity;
-					let alertType: AlertType = AlertType.NONE;
-
-					if (total > 1000000) {
-						alertType = AlertType.BIG;
-					} else if (quantity > 10 && total < 1000000) {
-						alertType = AlertType.SOLID;
-					} else if (price < 50000) {
-						alertType = AlertType.CHEAP;
+				if (message.TYPE !== MessageType.OrderBookUpdate && message.TYPE !== MessageType.OrderBookSnapshot) {
+					return;
+				} else if (message.TYPE === MessageType.OrderBookSnapshot) {
+					//Snapshot setting first CCSEQ
+					set((state) => {
+						state.lastCCSEQ = message.CCSEQ;
+						return state;
+					});
+				} else {
+					// OrderBookUpdate Type 8 (Messages to process for terminal)
+					// If there is a previous message, ensure its CCSEQ is exactly one less, if it's not we are out of sync and need to reconnect.
+					const { lastCCSEQ } = get();
+					if (lastCCSEQ !== null && message.CCSEQ !== lastCCSEQ + 1) {
+						console.error(`Out of sync: expected CCSEQ ${lastCCSEQ + 1}, but got ${message.CCSEQ}. Reconnecting...`);
+						console.log(lastCCSEQ, message.CCSEQ);
+						get().reconnect();
+						return;
 					}
+					// Setting CCEQ for next sync check.
+					set(() => {
+						return { lastCCSEQ: message.CCSEQ };
+					});
 
-					message.ALERT_TYPE = alertType;
-					const newItem: MessageItem = { message, alertType };
+					// Process the message normally
+					set((state) => {
+						let newMessages: MessageItem[];
 
-					/** Messages **/
-					// Insert new message item at the beginning (latest first)
-					if (state.messages.length < MAX_MESSAGES) {
-						newMessages = [newItem, ...state.messages];
-					} else {
-						newMessages = [newItem, ...state.messages.slice(0, MAX_MESSAGES - 1)];
-					}
-					/** Messages **/
+						const price = message.P;
+						const quantity = message.Q;
+						const total = price * quantity;
+						let alertType: AlertType = AlertType.NONE;
 
-					/** Alerts **/
-					const now = Date.now();
-					// Filter out alerts older than 1 minute
-					const filteredAlerts = state.alerts.filter((alert) => now - alert.TIMESTAMP < ALERT_WINDOW_MS);
+						if (total > 1000000) {
+							alertType = AlertType.BIG;
+						} else if (quantity > 10 && total < 1000000) {
+							alertType = AlertType.SOLID;
+						} else if (price < 50000) {
+							alertType = AlertType.CHEAP;
+						}
 
-					// Collect alerts if they have a type
-					const triggeredAlerts: CryptoCompareAlert[] = [];
-					if (alertType !== AlertType.NONE) {
-						triggeredAlerts.push({
+						message.ALERT_TYPE = alertType;
+						const newItem: MessageItem = { message, alertType };
+
+						// Messages: Insert new message at the beginning (latest first)
+						if (state.messages.length < MAX_MESSAGES) {
+							newMessages = [newItem, ...state.messages];
+						} else {
+							newMessages = [newItem, ...state.messages.slice(0, MAX_MESSAGES - 1)];
+						}
+
+						// Process alerts into three separate arrays based on type.
+						const now = Date.now();
+						// Remove outdated alerts from each array.
+						const filteredCheap = state.alertsCheap.filter((alert) => now - alert.TIMESTAMP < ALERT_WINDOW_MS);
+						const filteredSolid = state.alertsSolid.filter((alert) => now - alert.TIMESTAMP < ALERT_WINDOW_MS);
+						const filteredBig = state.alertsBig.filter((alert) => now - alert.TIMESTAMP < ALERT_WINDOW_MS);
+
+						// Depending on the alert type, prepend the new alert accordingly.
+						let newAlertsCheap = filteredCheap;
+						let newAlertsSolid = filteredSolid;
+						let newAlertsBig = filteredBig;
+
+						const alertData = {
 							TYPE: alertType,
 							PRICE: price,
 							QUANTITY: quantity,
 							TOTAL: total,
 							TIMESTAMP: now,
-						});
-					}
+						};
+						if (alertType === AlertType.CHEAP) {
+							newAlertsCheap = [alertData, ...filteredCheap].slice(0, MAX_MESSAGES);
+						} else if (alertType === AlertType.SOLID) {
+							newAlertsSolid = [alertData, ...filteredSolid].slice(0, MAX_MESSAGES);
+						} else if (alertType === AlertType.BIG) {
+							newAlertsBig = [alertData, ...filteredBig].slice(0, MAX_MESSAGES);
+						}
 
-					// Place newly triggered alerts at the beginning, then append the filtered (older) alerts
-					let newAlerts = [...triggeredAlerts, ...filteredAlerts];
-					// Cap alerts to MAX_MESSAGES entries if necessary
-					if (newAlerts.length > MAX_MESSAGES) {
-						newAlerts = newAlerts.slice(0, MAX_MESSAGES);
-					}
-
-					return {
-						lastMessage: event.data,
-						messages: newMessages,
-						alerts: newAlerts,
-					};
-				});
+						return {
+							lastMessage: event.data,
+							messages: newMessages,
+							alertsCheap: newAlertsCheap,
+							alertsSolid: newAlertsSolid,
+							alertsBig: newAlertsBig,
+						};
+					});
+				}
 			};
 
 			socket.onclose = () => {

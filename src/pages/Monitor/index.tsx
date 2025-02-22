@@ -4,11 +4,7 @@ import { useWebSocketStore } from "@/store/webSocketStore";
 const Monitor = () => {
 	const messages = useWebSocketStore((state) => state.messages);
 
-	return (
-		<div className="h-[90dvh]">
-			<MonitorTerminal messages={messages} />
-		</div>
-	);
+	return <MonitorTerminal messages={messages} />;
 };
 
 export default Monitor;

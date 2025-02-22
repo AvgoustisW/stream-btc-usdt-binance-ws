@@ -85,6 +85,7 @@ export enum MessageType {
 	SubscriptionComplete = "16",
 	StreamerWelcome = "20",
 	ServerError = "500",
+	Heartbeat = "999",
 }
 
 /**
@@ -116,12 +117,13 @@ export enum Action {
  * @description Human-readable labels for MessageType enum.
  */
 export const MessageTypeLabels: Record<MessageType, string> = {
-	[MessageType.OrderBookUpdate]: "OBU",
-	[MessageType.OrderBookSnapshot]: "OBS",
-	[MessageType.SubscriptionComplete]: "Sub ✓",
+	[MessageType.OrderBookUpdate]: "Order Book Update",
+	[MessageType.OrderBookSnapshot]: "Order Book Snapshot",
+	[MessageType.SubscriptionComplete]: "Subscription ✓",
 	[MessageType.LoadComplete]: "Load ✓",
 	[MessageType.StreamerWelcome]: "Welcome",
 	[MessageType.ServerError]: "Server Error",
+	[MessageType.Heartbeat]: "Heartbeat",
 };
 
 /**
@@ -153,18 +155,19 @@ export const ActionLabels: Record<Action, string> = {
  * @description Human-readable labels for each field of a CryptoCompareMessage.
  */
 export const CryptoCompareMessageFieldLabels: Record<keyof CryptoCompareMessage, string> = {
-	TYPE: "Message Type",
+	TYPE: "Type",
 	M: "Market",
-	FSYM: "From Symbol",
-	TSYM: "To Symbol",
+	FSYM: "From",
+	TSYM: "To",
 	SIDE: "Side",
 	ACTION: "Action",
-	CCSEQ: "Internal Sequence",
-	DELAYNS: "Delay (ns)",
+	CCSEQ: "Int. Sequence",
+	DELAYNS: "Delay (s)",
 	P: "Price",
 	Q: "Quantity",
-	REPORTEDNS: "Reported Timestamp (ns)",
-	SEQ: "Exchange Sequence",
+	REPORTEDNS: "Timestamp",
+	SEQ: "Exch. Sequence",
+	ALERT_TYPE: "Alert Type",
 };
 
 export interface CryptoCompareAlert {
