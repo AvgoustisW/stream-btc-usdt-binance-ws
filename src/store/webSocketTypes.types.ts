@@ -1,82 +1,49 @@
 /**
- * @description Represents a CryptoCompare message containing order book information.
+ * @description Represents a CryptoCompare message.
  */
 export interface CryptoCompareMessage {
-	/**
-	 * @description Type of the message.
-	 * LoadComplete ("3") for subscription load
-	 * OrderBookUpdate ("8") for an order book update,
-	 * OrderBookSnapshot ("9") for an order book snapshot.
-	 * SubscriptionComplete ("16") for a subscription complete message.
-	 * StreamerWelcome ("20") for a welcome message
-	 */
+	/** @description Message type. */
 	TYPE: MessageType;
-
-	/**
-	 * @description The market you have requested (name of the market e.g. Binance).
-	 * Currently fixed to Binance via Market.BINANCE.
-	 */
+	/** @description Market used (always Binance). */
 	M: Market.BINANCE;
-
-	/**
-	 * @description The mapped from asset (base symbol / coin) you have requested (e.g. BTC, ETH).
-	 */
+	/** @description Base asset symbol. */
 	FSYM: string;
-
-	/**
-	 * @description The mapped to asset (quote/counter symbol/coin) you have requested (e.g. BTC, USD).
-	 */
+	/** @description Quote asset symbol. */
 	TSYM: string;
-
-	/**
-	 * @description The side is 0 for BID and 1 for ASK.
-	 */
+	/** @description Order book side (BID/ASK). */
 	SIDE: Side;
-
-	/**
-	 * @description The action to apply on the snapshot:
-	 * 1 for ADD, 2 for REMOVE, 3 for NOACTION, 4 for CHANGE/UPDATE.
-	 */
+	/** @description Snapshot action (e.g. Add, Remove). */
 	ACTION: Action;
-
-	/**
-	 * @description Our internal order book sequence.
-	 * The snapshot you get when you subscribe will have the starting sequence and all other
-	 * updates will be increments of 1 on the sequence. This does not reset.
-	 */
+	/** @description Internal order book sequence; increments with each update. */
 	CCSEQ: number;
-
-	/**
-	 * @description The difference in nanoseconds between the REPORTEDNS and the time we publish the update on our internal network.
-	 */
+	/** @description Delay (ns) between message receipt and publish. */
 	DELAYNS: number;
-
-	/**
-	 * @description The price in the to asset (quote/counter symbol/coin) of the order book position.
-	 */
+	/** @description Price at the update. */
 	P: number;
-
-	/**
-	 * @description The from asset (base symbol/coin) volume of the position.
-	 */
+	/** @description Volume of the base asset. */
 	Q: number;
-
-	/**
-	 * @description The external exchange reported timestamp in nanoseconds.
-	 * If not provided, we store the time we received the message.
-	 */
+	/** @description Exchange-reported timestamp in nanoseconds (or receipt time if missing). */
 	REPORTEDNS: number;
-
-	/**
-	 * @description The external exchange sequence if they have one.
-	 */
+	/** @description Exchange sequence if provided. */
 	SEQ: number;
-
+	/** @description Alert status. This is created by us, it is not present in the CryptoCompare response*/
 	ALERT_TYPE: AlertType | "none";
 }
 
 /**
- * @description Enum for types of CryptoCompare messages.
+ * @description Enum for various CryptoCompare message types.
+ * @remarks Detailed information:
+ * - "3": LoadComplete – subscription load is complete.
+ * - "8": OrderBookUpdate – a single update to the order book.
+ * - "9": OrderBookSnapshot – full snapshot of the order book.
+ * - "16": SubscriptionComplete – first payload sent.
+ * - "20": StreamerWelcome – welcome message with rate limits and server stats.
+ * - "500": ServerError – general error, with further details in MESSAGE field.
+ * - "999": Heartbeat – periodic message every minute.
+ * - "17": UnsubscribeComplete – removal of a single subscription.
+ * - "18": UnsubscribeAllComplete – all subscriptions removed.
+ * - "401": Unauthorized – API key issues.
+ * - "429": RateLimited – too many connections/subscriptions (inspect MESSAGE for specifics).
  */
 export enum MessageType {
 	LoadComplete = "3",
@@ -86,17 +53,21 @@ export enum MessageType {
 	StreamerWelcome = "20",
 	ServerError = "500",
 	Heartbeat = "999",
+	UnsubscribeComplete = "17",
+	UnsubscribeAllComplete = "18",
+	Unauthorized = "401",
+	RateLimited = "429",
 }
 
 /**
- * @description Enum representing the market. Currently supports only Binance.
+ * @description Enum for supported markets.
  */
 export enum Market {
 	BINANCE = "Binance",
 }
 
 /**
- * @description Enum specifying the side (BID/ASK) of the order book.
+ * @description Enum for order book side.
  */
 export enum Side {
 	BID = 0,
@@ -104,7 +75,7 @@ export enum Side {
 }
 
 /**
- * @description Enum for the type of action on an order book snapshot.
+ * @description Enum for snapshot actions.
  */
 export enum Action {
 	ADD = 1,
@@ -114,27 +85,31 @@ export enum Action {
 }
 
 /**
- * @description Human-readable labels for MessageType enum.
+ * @description Human-readable labels for MessageType.
  */
 export const MessageTypeLabels: Record<MessageType, string> = {
+	[MessageType.LoadComplete]: "Load ✓",
 	[MessageType.OrderBookUpdate]: "Order Book Update",
 	[MessageType.OrderBookSnapshot]: "Order Book Snapshot",
 	[MessageType.SubscriptionComplete]: "Subscription ✓",
-	[MessageType.LoadComplete]: "Load ✓",
 	[MessageType.StreamerWelcome]: "Welcome",
 	[MessageType.ServerError]: "Server Error",
 	[MessageType.Heartbeat]: "Heartbeat",
+	[MessageType.UnsubscribeComplete]: "Unsubscribe Complete",
+	[MessageType.UnsubscribeAllComplete]: "Unsubscribe All Complete",
+	[MessageType.Unauthorized]: "Unauthorized",
+	[MessageType.RateLimited]: "Rate Limited",
 };
 
 /**
- * @description Human-readable labels for Market enum.
+ * @description Human-readable labels for Market.
  */
 export const MarketLabels: Record<Market, string> = {
 	[Market.BINANCE]: "Binance",
 };
 
 /**
- * @description Human-readable labels for Side enum.
+ * @description Human-readable labels for Side.
  */
 export const SideLabels: Record<Side, string> = {
 	[Side.BID]: "Bid",
@@ -142,7 +117,7 @@ export const SideLabels: Record<Side, string> = {
 };
 
 /**
- * @description Human-readable labels for Action enum.
+ * @description Human-readable labels for Action.
  */
 export const ActionLabels: Record<Action, string> = {
 	[Action.ADD]: "Add",
@@ -152,7 +127,7 @@ export const ActionLabels: Record<Action, string> = {
 };
 
 /**
- * @description Human-readable labels for each field of a CryptoCompareMessage.
+ * @description Field labels for CryptoCompareMessage.
  */
 export const CryptoCompareMessageFieldLabels: Record<keyof CryptoCompareMessage, string> = {
 	TYPE: "Type",
@@ -170,13 +145,25 @@ export const CryptoCompareMessageFieldLabels: Record<keyof CryptoCompareMessage,
 	ALERT_TYPE: "Alert Type",
 };
 
+/**
+ * @description Represents an alert extracted from message data.
+ */
 export interface CryptoCompareAlert {
+	/** @description Alert type. */
 	TYPE: AlertType;
+	/** @description Price triggering the alert. */
 	PRICE: number;
+	/** @description Quantity for the alert. */
 	QUANTITY: number;
+	/** @description Total computed from price and quantity. */
 	TOTAL: number;
+	/** @description Time the alert was generated (ms). */
 	TIMESTAMP: number;
 }
+
+/**
+ * @description Enum for alert types.
+ */
 export enum AlertType {
 	CHEAP = "cheap",
 	SOLID = "solid",
@@ -184,6 +171,9 @@ export enum AlertType {
 	NONE = "none",
 }
 
+/**
+ * @description Human-readable labels for AlertType.
+ */
 export const AlertTypeLabels: Record<AlertType, string> = {
 	[AlertType.CHEAP]: "Cheap order",
 	[AlertType.SOLID]: "Solid order",
@@ -192,7 +182,7 @@ export const AlertTypeLabels: Record<AlertType, string> = {
 };
 
 /**
- * @description Human-readable labels for each field of a CryptoCompareAlert.
+ * @description Field labels for CryptoCompareAlert.
  */
 export const CryptoCompareAlertFieldLabels: Record<keyof CryptoCompareAlert, string> = {
 	TYPE: "Type",

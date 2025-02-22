@@ -11,6 +11,7 @@ export interface MessageItem {
 	message: CryptoCompareMessage;
 	alertType: AlertType | "none";
 }
+
 interface WebSocketStore {
 	isConnected: boolean;
 	isLoading: boolean;
@@ -26,13 +27,74 @@ interface WebSocketStore {
 	reconnect: () => void;
 }
 
+const apiKey = import.meta.env.VITE_CRYPTOCOMPARE_API_KEY;
 const MAX_MESSAGES = 500;
 const ALERT_WINDOW_MS = 60000;
 const BINANCE_SUBSCRIPTION = "8~Binance~BTC~USDT";
+const RECONNECT_DELAY = 2000;
+
 export const useWebSocketStore = create<WebSocketStore>((set, get) => {
 	let socket: WebSocket | null = null;
-	const apiKey = import.meta.env.VITE_CRYPTOCOMPARE_API_KEY;
-	const RECONNECT_DELAY = 2000;
+
+	// Helper: Update the messages and alert arrays when receiving an OrderBookUpdate.
+	const processUpdate = (message: CryptoCompareMessage, raw: string) => {
+		set((state) => {
+			const now = Date.now();
+			const price = message.P;
+			const quantity = message.Q;
+			const total = price * quantity;
+			let alertType: AlertType = AlertType.NONE;
+
+			if (total > 1000000) {
+				alertType = AlertType.BIG;
+			} else if (quantity > 10 && total < 1000000) {
+				alertType = AlertType.SOLID;
+			} else if (price < 50000) {
+				alertType = AlertType.CHEAP;
+			}
+			message.ALERT_TYPE = alertType;
+			const newItem: MessageItem = { message, alertType };
+
+			// Insert new message (newest first)
+			const newMessages =
+				state.messages.length < MAX_MESSAGES
+					? [newItem, ...state.messages]
+					: [newItem, ...state.messages.slice(0, MAX_MESSAGES - 1)];
+
+			// Update alerts – filter out stale alerts first.
+			const filteredCheap = state.alertsCheap.filter((a) => now - a.TIMESTAMP < ALERT_WINDOW_MS);
+			const filteredSolid = state.alertsSolid.filter((a) => now - a.TIMESTAMP < ALERT_WINDOW_MS);
+			const filteredBig = state.alertsBig.filter((a) => now - a.TIMESTAMP < ALERT_WINDOW_MS);
+
+			const alertData: CryptoCompareAlert = {
+				TYPE: alertType,
+				PRICE: price,
+				QUANTITY: quantity,
+				TOTAL: total,
+				TIMESTAMP: now,
+			};
+
+			let newAlertsCheap = filteredCheap;
+			let newAlertsSolid = filteredSolid;
+			let newAlertsBig = filteredBig;
+
+			if (alertType === AlertType.CHEAP) {
+				newAlertsCheap = [alertData, ...filteredCheap].slice(0, MAX_MESSAGES);
+			} else if (alertType === AlertType.SOLID) {
+				newAlertsSolid = [alertData, ...filteredSolid].slice(0, MAX_MESSAGES);
+			} else if (alertType === AlertType.BIG) {
+				newAlertsBig = [alertData, ...filteredBig].slice(0, MAX_MESSAGES);
+			}
+
+			return {
+				lastMessage: raw,
+				messages: newMessages,
+				alertsCheap: newAlertsCheap,
+				alertsSolid: newAlertsSolid,
+				alertsBig: newAlertsBig,
+			};
+		});
+	};
 
 	return {
 		isConnected: false,
@@ -44,9 +106,9 @@ export const useWebSocketStore = create<WebSocketStore>((set, get) => {
 		alertsSolid: [],
 		alertsBig: [],
 
-		sendMessage: (message: string) => {
+		sendMessage: (msg: string) => {
 			if (socket && socket.readyState === WebSocket.OPEN) {
-				socket.send(message);
+				socket.send(msg);
 			}
 		},
 
@@ -70,97 +132,31 @@ export const useWebSocketStore = create<WebSocketStore>((set, get) => {
 
 			socket.onmessage = (event) => {
 				const message: CryptoCompareMessage = JSON.parse(event.data);
-				// Check for server error and trigger reconnect if necessary.
+				// Handle ServerError immediately.
 				if (message.TYPE === MessageType.ServerError) {
 					console.error(MessageTypeLabels[MessageType.ServerError], message.M);
 					get().reconnect();
 					return;
 				}
+				// Only process OrderBookUpdate and OrderBookSnapshot.
 				if (message.TYPE !== MessageType.OrderBookUpdate && message.TYPE !== MessageType.OrderBookSnapshot) {
 					return;
-				} else if (message.TYPE === MessageType.OrderBookSnapshot) {
-					//Snapshot setting first CCSEQ
-					set((state) => {
-						state.lastCCSEQ = message.CCSEQ;
-						return state;
-					});
+				}
+				// For snapshots, set the initial CCSEQ.
+				if (message.TYPE === MessageType.OrderBookSnapshot) {
+					set((state) => ({ ...state, lastCCSEQ: message.CCSEQ }));
 				} else {
-					// OrderBookUpdate Type 8 (Messages to process for terminal)
-					// If there is a previous message, ensure its CCSEQ is exactly one less, if it's not we are out of sync and need to reconnect.
+					// For updates, validate CCSEQ.
 					const { lastCCSEQ } = get();
 					if (lastCCSEQ !== null && message.CCSEQ !== lastCCSEQ + 1) {
 						console.error(`Out of sync: expected CCSEQ ${lastCCSEQ + 1}, but got ${message.CCSEQ}. Reconnecting...`);
-						console.log(lastCCSEQ, message.CCSEQ);
 						get().reconnect();
 						return;
 					}
-					// Setting CCEQ for next sync check.
-					set(() => {
-						return { lastCCSEQ: message.CCSEQ };
-					});
-
-					// Process the message normally
-					set((state) => {
-						let newMessages: MessageItem[];
-
-						const price = message.P;
-						const quantity = message.Q;
-						const total = price * quantity;
-						let alertType: AlertType = AlertType.NONE;
-
-						if (total > 1000000) {
-							alertType = AlertType.BIG;
-						} else if (quantity > 10 && total < 1000000) {
-							alertType = AlertType.SOLID;
-						} else if (price < 50000) {
-							alertType = AlertType.CHEAP;
-						}
-
-						message.ALERT_TYPE = alertType;
-						const newItem: MessageItem = { message, alertType };
-
-						// Messages: Insert new message at the beginning (latest first)
-						if (state.messages.length < MAX_MESSAGES) {
-							newMessages = [newItem, ...state.messages];
-						} else {
-							newMessages = [newItem, ...state.messages.slice(0, MAX_MESSAGES - 1)];
-						}
-
-						// Process alerts into three separate arrays based on type.
-						const now = Date.now();
-						// Remove outdated alerts from each array.
-						const filteredCheap = state.alertsCheap.filter((alert) => now - alert.TIMESTAMP < ALERT_WINDOW_MS);
-						const filteredSolid = state.alertsSolid.filter((alert) => now - alert.TIMESTAMP < ALERT_WINDOW_MS);
-						const filteredBig = state.alertsBig.filter((alert) => now - alert.TIMESTAMP < ALERT_WINDOW_MS);
-
-						// Depending on the alert type, prepend the new alert accordingly.
-						let newAlertsCheap = filteredCheap;
-						let newAlertsSolid = filteredSolid;
-						let newAlertsBig = filteredBig;
-
-						const alertData = {
-							TYPE: alertType,
-							PRICE: price,
-							QUANTITY: quantity,
-							TOTAL: total,
-							TIMESTAMP: now,
-						};
-						if (alertType === AlertType.CHEAP) {
-							newAlertsCheap = [alertData, ...filteredCheap].slice(0, MAX_MESSAGES);
-						} else if (alertType === AlertType.SOLID) {
-							newAlertsSolid = [alertData, ...filteredSolid].slice(0, MAX_MESSAGES);
-						} else if (alertType === AlertType.BIG) {
-							newAlertsBig = [alertData, ...filteredBig].slice(0, MAX_MESSAGES);
-						}
-
-						return {
-							lastMessage: event.data,
-							messages: newMessages,
-							alertsCheap: newAlertsCheap,
-							alertsSolid: newAlertsSolid,
-							alertsBig: newAlertsBig,
-						};
-					});
+					// Update lastCCSEQ.
+					set(() => ({ lastCCSEQ: message.CCSEQ }));
+					// Process the update.
+					processUpdate(message, event.data);
 				}
 			};
 
