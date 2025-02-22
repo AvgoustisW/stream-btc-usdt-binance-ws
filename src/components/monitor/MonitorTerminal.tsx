@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import { useMemo } from "react";
 import { VirtualizedTable, VirtualizedTableColumn } from "@/components/core/VirtualizedTable";
 import {
 	CryptoCompareMessage,
@@ -8,16 +8,13 @@ import {
 	CryptoCompareMessageFieldLabels,
 	MarketLabels,
 } from "@/store/webSocketTypes.types";
-import { MessageItem } from "@/store/webSocketStore";
+import { useWebSocketStore } from "@/store/webSocketStore";
 import { rowColorByType } from "@/utils/terminalUtils";
-
-interface MonitorTerminalProps {
-	messages: MessageItem[];
-}
 
 const ROW_HEIGHT = 50;
 
-const MonitorTerminal: React.FC<MonitorTerminalProps> = ({ messages }) => {
+const MonitorTerminal = () => {
+	const messages = useWebSocketStore((state) => state.messages);
 	const data = messages.map((item) => item.message);
 
 	const columns: VirtualizedTableColumn<CryptoCompareMessage>[] = useMemo(
