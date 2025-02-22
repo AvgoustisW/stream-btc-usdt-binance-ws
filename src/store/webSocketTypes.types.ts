@@ -1,3 +1,8 @@
+export interface MessageItem {
+	message: CryptoCompareMessage;
+	alertType: AlertType | "none";
+}
+
 /**
  * @description Represents a CryptoCompare message.
  */

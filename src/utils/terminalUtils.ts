@@ -7,7 +7,7 @@ export const rowColorByType = (type: AlertType | "none") => {
 		case AlertType.SOLID:
 			return "bg-blue-700";
 		case AlertType.BIG:
-			return "bg-red-400";
+			return "bg-red-800";
 		default:
 			return "";
 	}

@@ -3,14 +3,10 @@ import {
 	AlertType,
 	CryptoCompareAlert,
 	CryptoCompareMessage,
+	MessageItem,
 	MessageType,
 	MessageTypeLabels,
 } from "./webSocketTypes.types";
-
-export interface MessageItem {
-	message: CryptoCompareMessage;
-	alertType: AlertType | "none";
-}
 
 interface WebSocketStore {
 	isConnected: boolean;
