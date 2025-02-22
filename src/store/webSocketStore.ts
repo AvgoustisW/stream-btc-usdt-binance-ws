@@ -40,6 +40,7 @@ export const useWebSocketStore = create<WebSocketStore>((set, get) => {
 
 	// Cleanup: remove event handlers & close the socket.
 	function cleanupSocket() {
+		console.log("WebSocket disconnected");
 		if (socket) {
 			socket.onopen = null;
 			socket.onmessage = null;
@@ -203,8 +204,8 @@ export const useWebSocketStore = create<WebSocketStore>((set, get) => {
 		},
 
 		disconnect: () => {
+			set({ isConnected: false, isLoading: false });
 			cleanupSocket();
-			set({ isConnected: false });
 		},
 
 		reconnect: () => {

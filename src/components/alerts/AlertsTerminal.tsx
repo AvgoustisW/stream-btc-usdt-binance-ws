@@ -43,7 +43,7 @@ const AlertsTerminal: React.FC = () => {
 					rowHeight={ROW_HEIGHT}
 					columns={columns}
 					rowKey="terminal-item"
-					noDataText="No big alerts"
+					noDataText="No big order alerts"
 				/>
 			</div>
 			<div className="h-1/3 border-t border-green-500">
@@ -52,7 +52,7 @@ const AlertsTerminal: React.FC = () => {
 					rowHeight={ROW_HEIGHT}
 					columns={columns}
 					rowKey="terminal-item"
-					noDataText="No solid alerts"
+					noDataText="No solid order alerts"
 				/>
 			</div>
 			<div className="h-1/3 border-t border-green-500">
@@ -61,7 +61,7 @@ const AlertsTerminal: React.FC = () => {
 					rowHeight={ROW_HEIGHT}
 					columns={columns}
 					rowKey="terminal-item"
-					noDataText="No cheap alerts"
+					noDataText="No cheap order alerts"
 				/>
 			</div>
 		</div>

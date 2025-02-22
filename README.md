@@ -2,7 +2,7 @@
 
 ## How to run:
 
-You can find it deployed on vercel here: [https://stream-them-all.vercel.app/monitor](https://stream-them-all.vercel.app/monitor)
+You can find it deployed on vercel here: [https://stream-them-all.vercel.app](https://stream-them-all.vercel.app/monitor)
 
 If you decide to run it locally, you will first need to create an `.env` file in the root of the project with the following content:
 
@@ -54,3 +54,5 @@ I did implement throttling at first. UI/UX was much smoother and more performant
 - Mobile support, I have styled the app for desktop only, best viewed in 1080p+ screens.
 - [Tailwind Merge](https://github.com/dcastil/tailwind-merge) for better readability and maintanability.
 - Git history. It's okay, but I am using 1 branch for the whole project.
+- I have not included any testing (vitest, jest, etc.).
+- Are there any memory leaks I am not aware of?
