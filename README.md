@@ -50,6 +50,7 @@ I did implement throttling at first. UI/UX was much smoother and more performant
 
 ## What can be improved? What is missing?
 
+- Keyboard navigation. I did not optimize for it.
 - Accessibility. There are no aria-labels or screen reader solutions. Not that it would make sense to have any.
 - Mobile support, I have styled the app for desktop only, best viewed in 1080p+ screens.
 - [Tailwind Merge](https://github.com/dcastil/tailwind-merge) for better readability and maintanability.
