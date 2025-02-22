@@ -21,10 +21,12 @@ interface WebSocketStore {
 	alertsCheap: CryptoCompareAlert[];
 	alertsSolid: CryptoCompareAlert[];
 	alertsBig: CryptoCompareAlert[];
+	autoReconnect: boolean;
 	sendMessage: (message: string) => void;
 	connect: () => void;
 	disconnect: () => void;
 	reconnect: () => void;
+	setAutoReconnect: (value: boolean) => void;
 }
 
 const apiKey = import.meta.env.VITE_CRYPTOCOMPARE_API_KEY;
@@ -36,7 +38,28 @@ const RECONNECT_DELAY = 2000;
 export const useWebSocketStore = create<WebSocketStore>((set, get) => {
 	let socket: WebSocket | null = null;
 
-	// Helper: Update the messages and alert arrays when receiving an OrderBookUpdate.
+	// Cleanup: remove event handlers & close the socket.
+	function cleanupSocket() {
+		if (socket) {
+			socket.onopen = null;
+			socket.onmessage = null;
+			socket.onclose = null;
+			socket.onerror = null;
+			socket.close();
+			socket = null;
+		}
+	}
+
+	// Listen for tab visibility change.
+	document.addEventListener("visibilitychange", () => {
+		if (document.hidden) {
+			get().disconnect();
+		} else if (get().autoReconnect) {
+			get().connect();
+		}
+	});
+
+	// Helper: Process OrderBookUpdate messages.
 	const processUpdate = (message: CryptoCompareMessage, raw: string) => {
 		set((state) => {
 			const now = Date.now();
@@ -105,6 +128,7 @@ export const useWebSocketStore = create<WebSocketStore>((set, get) => {
 		alertsCheap: [],
 		alertsSolid: [],
 		alertsBig: [],
+		autoReconnect: false,
 
 		sendMessage: (msg: string) => {
 			if (socket && socket.readyState === WebSocket.OPEN) {
@@ -179,11 +203,8 @@ export const useWebSocketStore = create<WebSocketStore>((set, get) => {
 		},
 
 		disconnect: () => {
-			if (socket) {
-				socket.close();
-				socket = null;
-				set({ isConnected: false });
-			}
+			cleanupSocket();
+			set({ isConnected: false });
 		},
 
 		reconnect: () => {
@@ -193,6 +214,10 @@ export const useWebSocketStore = create<WebSocketStore>((set, get) => {
 			setTimeout(() => {
 				get().connect();
 			}, RECONNECT_DELAY);
+		},
+
+		setAutoReconnect: (value: boolean) => {
+			set({ autoReconnect: value });
 		},
 	};
 });

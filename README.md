@@ -38,6 +38,8 @@ When it comes to memory leak, it was my biggest concern. I have tested it in a f
 
 I implemented virtualization with `react-window` (removing dom elements that are not in viewport). While 500 is not a huge amount of data, that might change in the future. It's good to be prepared, the array still holds all 500 elements in memory.
 
+When browser tab is not active/visible I am disconnecting from the connection. Reconnecting automatically when tab is in view can be enabled/disabled by the user.
+
 ## Shadow Banned:
 
 I got shadow banned from CryptoCompare on my first attempt to stream the data, getting `429 Too Many Requests` error that just wouldn't go away. Making a second account from the same IP did not solve the problem, they did their due dilligence. Making a third account from a different IP did provide a working api key.
