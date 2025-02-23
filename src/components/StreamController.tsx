@@ -6,33 +6,23 @@ import RadioButtonPanel from "./core/RadioButtonPanel";
 const StreamController = () => {
 	const { connect, disconnect, isConnected, isLoading, autoReconnect, setAutoReconnect } = useWebSocketStore();
 
-	const handleConnectToStream = () => {
-		connect();
-	};
+	const handleConnectToStream = () => connect();
+	const handleDisconnectFromStream = () => disconnect();
+	const handleToggleStream = () => (isConnected ? handleDisconnectFromStream() : handleConnectToStream());
 
-	const handleDisconnectFromStream = () => {
-		disconnect();
-	};
-
-	const isStartDisabled = isConnected && !isLoading;
-	const isStopDisabled = !isConnected && !isLoading;
+	const isStartDisabled = isConnected || isLoading;
+	const isStopDisabled = !isConnected || isLoading;
+	const buttonDisabled = isConnected ? isStopDisabled : isStartDisabled;
 
 	return (
 		<div className="flex gap-4">
 			<IconButton
-				text="Start"
-				onClick={handleConnectToStream}
-				disabled={isStartDisabled}
-				className={` ${isStartDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:bg-green-400"}`}
+				text={isConnected ? "Stop" : "Start"}
+				onClick={handleToggleStream}
+				disabled={buttonDisabled}
+				className={`min-w-[90px] ${!buttonDisabled ? (isConnected ? "hover:bg-red-400" : "hover:bg-green-400") : ""}`}
 				isLoading={isLoading}
-				icon={<FaPlay />}
-			/>
-			<IconButton
-				text="Stop"
-				onClick={handleDisconnectFromStream}
-				disabled={isStopDisabled}
-				className={` ${isStopDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:bg-red-400"}`}
-				icon={<FaStop />}
+				icon={isConnected ? <FaStop /> : <FaPlay />}
 			/>
 			<div className="flex items-center gap-2 border px-2 rounded border-slate-600">
 				<span className="text-sm font-medium">Auto-Reconnect:</span>
