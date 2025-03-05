@@ -14,7 +14,7 @@ export interface VirtualizedTableProps<T> {
 	data: T[];
 	rowHeight: number;
 	columns: VirtualizedTableColumn<T>[];
-	rowKey?: string;
+	rowKey: keyof T;
 	noDataText?: string;
 }
 
@@ -23,7 +23,7 @@ export const VirtualizedTable = <T,>({
 	rowHeight,
 	columns,
 	noDataText = "Waiting on data...",
-	rowKey = "vt-table-row",
+	rowKey,
 }: VirtualizedTableProps<T>) => {
 	// Generate the header using the columns config.
 	const header = (
@@ -68,7 +68,7 @@ export const VirtualizedTable = <T,>({
 				{({ height, width }) => (
 					<List height={height} itemCount={data.length} itemSize={rowHeight} width={width} itemData={data}>
 						{({ index, style, data }: ListChildComponentProps<T[]>) => (
-							<div key={`${rowKey}-${data[index]}`} style={style} className="flex border-t border-gray-800">
+							<div key={`vt-row-${data[index][rowKey]}`} style={style} className="flex border-t border-gray-800">
 								{renderRow(data[index])}
 							</div>
 						)}

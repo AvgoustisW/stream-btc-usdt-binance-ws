@@ -84,7 +84,7 @@ const MonitorTerminal = () => {
 		[]
 	);
 
-	return <VirtualizedTable data={data} rowHeight={ROW_HEIGHT} columns={columns} rowKey="terminal-item" />;
+	return <VirtualizedTable data={data} rowHeight={ROW_HEIGHT} columns={columns} rowKey="CCSEQ" />;
 };
 
 export default MonitorTerminal;
