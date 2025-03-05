@@ -1,5 +1,3 @@
-# Hi, thank you for reviewing, it was a fun challenge.
-
 ## How to run:
 
 You can find it deployed on vercel here: [https://stream-them-all.vercel.app](https://stream-them-all.vercel.app/monitor)
@@ -42,13 +40,6 @@ heartbeatIntervalId = setInterval(() => {
 Could the code be compartmentalized a bit more? Sure it could. I have componentized the code as much as as I could, and in places where actual value materializes. When it comes to the `webSocketStore.ts` code and for our case, I find it simpler to keep it in one place and not have to jump around files to understand what is going on.
 
 ## Process
-
-### **Important**! Solid Alerts vs Big Alerts. Since most 10+ quantity orders are big alerts due to BTC price being too close to 100k, I have decided to not push solid alerts for orders with a total of over $1m even if the quantity is over 10. If I did, we would have a lot of duplicate alerts between big and solid. This of course means that depending on the price, solid alerts are rarely seen. They do exist though.
-
-![alt text](readme-image.png)
-
----
-
 I went through the documentation of Order Book L2 and made a very close representation of their models/rules in `webSocketStore.types.ts`.
 
 When it comes to memory leak, it was my biggest concern. I have tested it in a few ways and it's not present so far. I have consistently simulated a memory leak by inspecting dev tools and looking at the websocket incoming data. The browser stores it for debugging and as it is logical, the memory allocated grows and grows. By keeping the dev tools closed I haven't found any memory leaks thus far.
