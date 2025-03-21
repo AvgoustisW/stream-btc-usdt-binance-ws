@@ -182,7 +182,7 @@ export enum AlertType {
 export const AlertTypeLabels: Record<AlertType, string> = {
 	[AlertType.CHEAP]: "Cheap order",
 	[AlertType.SOLID]: "Solid order",
-	[AlertType.BIG]: "Big biznis here",
+	[AlertType.BIG]: "Big business here",
 	[AlertType.NONE]: "No alert",
 };
 
